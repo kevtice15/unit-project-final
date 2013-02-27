@@ -13,10 +13,6 @@ app.use(express.cookieSession({
 	secret: "tweets"
 }));
 
-app.get("/static/:filename", function(request, response){
-	response.sendfile("static/" + request.params.filename);
-});
-
 var requestQuery;
 var lastTweet = 0;
 var tweetList = [];
@@ -142,6 +138,11 @@ function venueGetter(query, callback2){
 	return https.request(options, callback).end();
 }
 
+app.get("/static/:filename", function(request, response){
+	response.sendfile("static/" + request.params.filename);
+});
+
+
 app.get('/search/:keyword', function(request, response){
 	requestQuery = request.params.keyword;
 	tweetGetter(function(str){
@@ -185,21 +186,12 @@ app.post('/new', function(request, response){
 	console.log(request.cookies);
 	console.log("Sessions!!!!!");
 	console.log(request.session);
-	if(request.session.uid === undefined){
-		request.session.uid = userCount + 1;
-		users.push(new User(request.session.uid, undefined));
-		userCount++;
-	}
-	else{
-		if(users[request.session.uid] === undefined){
-			users.push(new User(request.session.uid, undefined));
-		}
-	}
 	tweetGetter(tq, function(str){
 		console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-		parseData(str, users[(request.session.uid) - 1]);
+		request.session.tweets = parseData(str);
+		console.log("Sessions Tweets!!!!!");
+		console.log(request.session.tweets);
 		response.send({
-			data: users[(request.session.uid) - 1].tweets,
 			//data: tweetList,
 			success: (str !== undefined)
 		});
@@ -212,22 +204,12 @@ app.get('/tweet', function(request, response){
 	console.log(request.cookies);
 	console.log("Sessions!!!!!");
 	console.log(request.session);
-	if(request.session.uid === undefined){
-		request.session.uid = userCount + 1;
-		users.push(new User(request.session.uid, undefined));
-		userCount++;
-	}
-	else{
-		if(users[request.session.uid] === undefined){
-			users.push(new User(request.session.uid, undefined));
-		}
-	}
 
 	tweetCount++; //GET RID OF THISS!!!!!!!!!!!!!!!!!!!
 	if(tweetCount >= 179){
 		tweetGetter(lastTweetObj, function(str){
 			console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-			parseData(str, users[(request.session.uid) - 1]);
+			parseData(str);
 		});
 	}
     console.log('You have visited this page ' + request.session.visitCount + ' times');
@@ -240,17 +222,19 @@ app.get('/tweet', function(request, response){
 
 
 
-function parseData(str, user){
+function parseData(str){
 	//console.log(str);
-	tweets = JSON.parse(str);
+	//console.log("user: " + user.id);
+	var tweets = JSON.parse(str);
+	var tweetList = [];
 	lastTweet = tweets.max_id_str;
 	for(var tweet in tweets.results){
 		tweetList[tweet] = new Tweet(tweets.results[tweet].id_str, tweets.results[tweet].text, tweets.results[tweet].from_user_name, tweets.results[tweet].profile_image_url,tweets.results[tweet].geo);
 	}
 	console.log(users);
-	users[(user.id) - 1].tweets = tweetList;
+	//users[(user.id) - 1].tweets = tweetList;
 
-	//return tweets;
+	return tweetList;
 }
 
 
