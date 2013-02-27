@@ -23,7 +23,7 @@ var tweetList = [];
 var tweetCount = 0;
 var lastTweetObj;
 
-var uCount = 0;
+var userCount = 0;
 var users = [];
 var tweetList = [];
 
@@ -46,7 +46,6 @@ function Tweet(id, text, username, image, geo){
 	this.username = username;
 	this.image = image;
 	this.geo = geo;
-	this.uid = uid;
 }
 
 function TweetQuery(keyword, lat, lon, radius){
@@ -173,16 +172,6 @@ app.get('/venues/search', function(request, response){
 
 
 app.post('/new', function(request, response){
-	console.log("COOOOOOOOOOOOOOOOOOOOOOOOOOOOOOKIEEEEEEEEEEEESSSSSSSSSS!!!!!");
-	console.log(request.cookies);
-	console.log("Sessions!!!!!");
-	console.log(request.session);
-	if(request.session.uid === undefined){
-		request.session.uid = userCount + 1;
-		users.push(new User(request.session.uid, undefined));
-		userCount++;
-	}
-	else{}
 	console.log('You have visited this page ' + request.session.visitCount + ' times');
 	var tq = new TweetQuery(
 		request.body.keyword,
@@ -192,27 +181,6 @@ app.post('/new', function(request, response){
 		);
 	lastTweetObj = tq;//GET RID OF THIS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	console.log(tq.radius+"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-	tweetGetter(tq, function(str){
-		console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-		parseData(str, users[request.session.uid]);
-		response.send({
-			data: users[request.session.uid].tweets,
-			//data: tweetList,
-			success: (str !== undefined)
-		});
-	});
-});
-
-
-app.get('/tweet', function(request, response){
-	tweetCount++; //GET RID OF THISS!!!!!!!!!!!!!!!!!!!
-	if(tweetCount >= 179){
-		tweetGetter(lastTweetObj, function(str){
-			console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-			parseData(str, user);
-		});
-	}
-
 	console.log("COOOOOOOOOOOOOOOOOOOOOOOOOOOOOOKIEEEEEEEEEEEESSSSSSSSSS!!!!!");
 	console.log(request.cookies);
 	console.log("Sessions!!!!!");
@@ -222,7 +190,46 @@ app.get('/tweet', function(request, response){
 		users.push(new User(request.session.uid, undefined));
 		userCount++;
 	}
-	else{}
+	else{
+		if(users[request.session.uid] === undefined){
+			users.push(new User(request.session.uid, undefined));
+		}
+	}
+	tweetGetter(tq, function(str){
+		console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		parseData(str, users[(request.session.uid) - 1]);
+		response.send({
+			data: users[(request.session.uid) - 1].tweets,
+			//data: tweetList,
+			success: (str !== undefined)
+		});
+	});
+});
+
+
+app.get('/tweet', function(request, response){
+	console.log("COOOOOOOOOOOOOOOOOOOOOOOOOOOOOOKIEEEEEEEEEEEESSSSSSSSSS!!!!!");
+	console.log(request.cookies);
+	console.log("Sessions!!!!!");
+	console.log(request.session);
+	if(request.session.uid === undefined){
+		request.session.uid = userCount + 1;
+		users.push(new User(request.session.uid, undefined));
+		userCount++;
+	}
+	else{
+		if(users[request.session.uid] === undefined){
+			users.push(new User(request.session.uid, undefined));
+		}
+	}
+
+	tweetCount++; //GET RID OF THISS!!!!!!!!!!!!!!!!!!!
+	if(tweetCount >= 179){
+		tweetGetter(lastTweetObj, function(str){
+			console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+			parseData(str, users[(request.session.uid) - 1]);
+		});
+	}
     console.log('You have visited this page ' + request.session.visitCount + ' times');
 	
 	response.send({
@@ -240,7 +247,8 @@ function parseData(str, user){
 	for(var tweet in tweets.results){
 		tweetList[tweet] = new Tweet(tweets.results[tweet].id_str, tweets.results[tweet].text, tweets.results[tweet].from_user_name, tweets.results[tweet].profile_image_url,tweets.results[tweet].geo);
 	}
-	users[user.id].tweets = tweetList;
+	console.log(users);
+	users[(user.id) - 1].tweets = tweetList;
 
 	//return tweets;
 }
